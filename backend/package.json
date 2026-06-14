@@ -1,0 +1,21 @@
+{
+  "name": "token-os-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "axios": "^1.6.2",
+    "telegraf": "^4.15.3",
+    "dotenv": "^16.3.1",
+    "@solana/web3.js": "^1.87.6",
+    "uuid": "^9.0.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

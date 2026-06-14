@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOKEN OS — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #080b0f;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --border: #1a2a3a;
+    --accent: #00ffe0;
+    --accent2: #7b2fff;
+    --accent3: #ff3366;
+    --text: #c8d8e8;
+    --dim: #4a6070;
+    --gold: #ffd700;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,224,0.015) 2px,
+      rgba(0,255,224,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,255,224,0.5);
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .status-bar {
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    gap: 20px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: calc(100vh - 57px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+  }
+
+  .sidebar-section {
+    padding: 0 16px;
+    margin-bottom: 28px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    margin-bottom: 2px;
+  }
+
+  .nav-btn:hover { background: var(--bg3); color: var(--accent); }
+  .nav-btn.active { background: rgba(0,255,224,0.08); color: var(--accent); border-left: 2px solid var(--accent); }
+  .nav-btn .icon { font-size: 16px; width: 20px; }
+
+  .register-box {
+    margin: 0 16px;
+    padding: 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .register-box input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .register-box input:focus { border-color: var(--accent); }
+  .register-box input::placeholder { color: var(--dim); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 9px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 3px;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover { background: #00ccb4; box-shadow: 0 0 20px rgba(0,255,224,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .project-list { padding: 0 16px; }
+
+  .project-item {
+    padding: 10px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .project-item:hover { border-color: var(--accent); }
+  .project-item.active { border-color: var(--accent); background: rgba(0,255,224,0.05); }
+  .project-item .pname { font-size: 13px; color: var(--accent); margin-bottom: 3px; }
+  .project-item .pmint { font-size: 10px; color: var(--dim); }
+
+  /* Main content */
+  .main { padding: 24px; overflow-y: auto; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .stat-label { font-size: 10px; letter-spacing: 2px; color: var(--dim); margin-bottom: 10px; }
+  .stat-value { font-family: 'Orbitron', monospace; font-size: 26px; font-weight: 700; color: var(--accent); }
+  .stat-sub { font-size: 11px; color: var(--dim); margin-top: 4px; }
+
+  /* Section */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 18px;
+  }
+
+  .section-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .section-body { padding: 18px; }
+
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(26,42,58,0.5);
+    vertical-align: middle;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(0,255,224,0.03); }
+
+  .rank-badge {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    text-align: center;
+    line-height: 24px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .rank-badge.top { border-color: var(--gold); color: var(--gold); }
+
+  .wallet-addr { color: var(--accent); font-size: 12px; }
+  .amount { color: var(--text); }
+
+  /* Chart */
+  .chart-container {
+    height: 200px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 10px 0;
+  }
+
+  .chart-bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--accent), rgba(0,255,224,0.2));
+    border-radius: 2px 2px 0 0;
+    position: relative;
+    min-width: 8px;
+    transition: opacity 0.2s;
+    cursor: pointer;
+  }
+
+  .chart-bar:hover { opacity: 0.8; }
+
+  .chart-bar::after {
+    content: attr(data-val);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--accent);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .chart-bar:hover::after { opacity: 1; }
+
+  /* Milestone form */
+  .milestone-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .milestone-form select, .milestone-form input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    border-radius: 3px;
+    outline: none;
+  }
+
+  .milestone-form select { flex: 1; }
+  .milestone-form input { flex: 2; }
+
+  .milestone-form select:focus, .milestone-form input:focus { border-color: var(--accent); }
+
+  .btn-sm {
+    padding: 9px 16px;
+    background: rgba(0,255,224,0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-sm:hover { background: rgba(0,255,224,0.2); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .badge-green { background: rgba(0,255,100,0.1); color: #00ff64; border: 1px solid rgba(0,255,100,0.3); }
+  .badge-red { background: rgba(255,51,102,0.1); color: var(--accent3); border: 1px solid rgba(255,51,102,0.3); }
+  .badge-dim { background: var(--bg3); color: var(--dim); border: 1px solid var(--border); }
+
+  /* Airdrop */
+  .airdrop-form { display: flex; flex-direction: column; gap: 12px; }
+
+  .form-row { display: flex; gap: 12px; }
+  .form-group { flex: 1; }
+  .form-label { font-size: 10px; letter-spacing: 2px; color: var(--dim); margin-bottom: 6px; display: block; }
+
+  .form-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+
+  .preview-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 14px;
+    font-size: 12px;
+  }
+
+  .preview-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .preview-row:last-child { margin-bottom: 0; }
+  .preview-key { color: var(--dim); }
+  .preview-val { color: var(--accent); font-family: 'Orbitron', monospace; font-size: 13px; }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--dim);
+    font-size: 13px;
+  }
+
+  .empty .icon { font-size: 32px; margin-bottom: 12px; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-size: 13px;
+    z-index: 9999;
+    display: none;
+    box-shadow: 0 0 20px rgba(0,255,224,0.2);
+  }
+
+  .toast.show { display: block; animation: slideIn 0.3s ease; }
+
+  @keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Loading */
+  .loading {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .page-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .no-project {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    text-align: center;
+    color: var(--dim);
+  }
+
+  .no-project h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .telegram-form { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Billing */
+  .sub-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    font-family: 'Orbitron', monospace;
+  }
+
+  .sub-badge.trial { background: rgba(255,215,0,0.1); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
+  .sub-badge.active { background: rgba(0,255,100,0.1); color: #00ff64; border: 1px solid rgba(0,255,100,0.3); }
+  .sub-badge.expired { background: rgba(255,51,102,0.1); color: var(--accent3); border: 1px solid rgba(255,51,102,0.3); }
+
+  .billing-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 18px;
+  }
+
+  @media (max-width: 900px) {
+    .billing-grid { grid-template-columns: 1fr; }
+  }
+
+  .plan-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .plan-row:last-child { border-bottom: none; }
+  .plan-row .plabel { font-size: 13px; color: var(--text); }
+  .plan-row .pval { font-family: 'Orbitron', monospace; color: var(--accent); font-size: 14px; }
+
+  .qr-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  #qr-canvas {
+    background: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    min-width: 160px;
+  }
+
+  .pay-link {
+    font-size: 11px;
+    color: var(--accent);
+    word-break: break-all;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 3px;
+    background: var(--bg3);
+    width: 100%;
+  }
+
+  .pay-link:hover { border-color: var(--accent); }
+
+  .upsell {
+    text-align: center;
+    padding: 30px 20px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    color: var(--dim);
+    font-size: 12px;
+  }
+
+  .upsell .icon { font-size: 28px; margin-bottom: 10px; }
+  .upsell .btn-sm { margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TOKEN<span>OS</span></div>
+  <div class="status-bar">
+    <span><span class="status-dot"></span>HELIUS CONNECTED</span>
+    <span id="time-display"></span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">REGISTER PROJECT</div>
+      <div class="register-box">
+        <input type="text" id="proj-name" placeholder="Token name" />
+        <input type="text" id="proj-mint" placeholder="Mint address" />
+        <input type="text" id="proj-wallet" placeholder="Your wallet" />
+        <button class="btn-primary" onclick="registerProject()">REGISTER</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">NAVIGATION</div>
+      <button class="nav-btn active" onclick="showPage('overview', this)">
+        <span class="icon">📊</span> Overview
+      </button>
+      <button class="nav-btn" onclick="showPage('holders', this)">
+        <span class="icon">👥</span> Holders
+      </button>
+      <button class="nav-btn" onclick="showPage('milestones', this)">
+        <span class="icon">🎯</span> Milestones
+      </button>
+      <button class="nav-btn" onclick="showPage('airdrop', this)">
+        <span class="icon">🪂</span> Airdrop
+      </button>
+      <button class="nav-btn" onclick="showPage('telegram', this)">
+        <span class="icon">✈️</span> Telegram
+      </button>
+      <button class="nav-btn" onclick="showPage('billing', this)">
+        <span class="icon">💳</span> Billing
+      </button>
+    </div>
+
+    <div class="sidebar-section" id="sub-status-section" style="display:none">
+      <div class="sidebar-label">SUBSCRIPTION</div>
+      <div id="sub-badge-container"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">YOUR PROJECTS</div>
+      <div class="project-list" id="project-list">
+        <div class="empty" style="padding: 12px; font-size: 11px;">No projects yet</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Overview -->
+    <div class="page active" id="page-overview">
+      <div id="overview-no-project" class="no-project">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚡</div>
+        <h2>NO PROJECT SELECTED</h2>
+        <p>Register or select a token project from the sidebar to get started.</p>
+      </div>
+      <div id="overview-content" style="display:none">
+        <div class="page-title">OVERVIEW</div>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">TOKEN NAME</div>
+            <div class="stat-value" id="stat-name" style="font-size:18px">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">TOTAL HOLDERS</div>
+            <div class="stat-value" id="stat-holders">—</div>
+            <div class="stat-sub">live count</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">PRICE (USD)</div>
+            <div class="stat-value" id="stat-price" style="font-size:16px">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">SYMBOL</div>
+            <div class="stat-value" id="stat-symbol" style="font-size:22px">—</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">TOP 5 HOLDERS</div>
+            <button class="btn-sm" onclick="showPage('holders', document.querySelector('.nav-btn:nth-child(2)'))">VIEW ALL →</button>
+          </div>
+          <div class="section-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>RANK</th>
+                  <th>WALLET</th>
+                  <th>AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody id="top-holders-table">
+                <tr><td colspan="3" style="text-align:center;color:var(--dim);padding:20px">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holders -->
+    <div class="page" id="page-holders">
+      <div class="page-title">HOLDER ANALYTICS</div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">HOLDER GROWTH</div>
+          <button class="btn-sm" onclick="loadHolders()">↻ REFRESH</button>
+        </div>
+        <div class="section-body">
+          <div class="chart-container" id="holder-chart">
+            <div style="color:var(--dim);font-size:12px;margin:auto">No history yet. Refresh to capture a snapshot.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">ALL TOP HOLDERS</div>
+          <span id="holder-count-badge" style="font-size:12px;color:var(--dim)"></span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>WALLET</th>
+                <th>AMOUNT</th>
+                <th>% SUPPLY</th>
+              </tr>
+            </thead>
+            <tbody id="holders-table">
+              <tr><td colspan="4" class="empty">Select a project to view holders</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Milestones -->
+    <div class="page" id="page-milestones">
+      <div class="page-title">MILESTONES & ALERTS</div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">SET MILESTONE</div>
+        </div>
+        <div class="section-body">
+          <div class="milestone-form">
+            <select id="m-type">
+              <option value="holder_count">Holder Count</option>
+              <option value="burn_percent">Burn %</option>
+              <option value="price">Price (USD)</option>
+            </select>
+            <input type="number" id="m-value" placeholder="Target value (e.g. 1000)" />
+            <button class="btn-sm" onclick="addMilestone()">+ ADD</button>
+          </div>
+          <div style="font-size:11px;color:var(--dim)">Alerts will fire to your Telegram group when the target is reached.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">ACTIVE MILESTONES</div>
+          <button class="btn-sm" onclick="loadMilestones()">↻ REFRESH</button>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TYPE</th>
+                <th>TARGET</th>
+                <th>STATUS</th>
+                <th>TRIGGERED</th>
+              </tr>
+            </thead>
+            <tbody id="milestones-table">
+              <tr><td colspan="4" class="empty">No milestones set</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Airdrop -->
+    <div class="page" id="page-airdrop">
+      <div class="page-title">AIRDROP TOOL</div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">CONFIGURE AIRDROP</div>
+        </div>
+        <div class="section-body">
+          <div class="airdrop-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">TOTAL SOL AMOUNT</label>
+                <input class="form-input" type="number" id="airdrop-amount" placeholder="e.g. 10" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">TOP N HOLDERS (0 = all)</label>
+                <input class="form-input" type="number" id="airdrop-topn" placeholder="e.g. 100" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">MIN HOLDING (tokens)</label>
+                <input class="form-input" type="number" id="airdrop-min" placeholder="e.g. 1000" />
+              </div>
+            </div>
+            <button class="btn-sm" onclick="previewAirdrop()" style="align-self:flex-start">PREVIEW DISTRIBUTION</button>
+
+            <div id="airdrop-preview" style="display:none">
+              <div id="airdrop-preview-result">
+                <div class="preview-box">
+                  <div class="preview-row">
+                    <span class="preview-key">RECIPIENTS</span>
+                    <span class="preview-val" id="prev-count">—</span>
+                  </div>
+                  <div class="preview-row">
+                    <span class="preview-key">TOTAL AMOUNT</span>
+                    <span class="preview-val" id="prev-total">—</span>
+                  </div>
+                  <div class="preview-row">
+                    <span class="preview-key">PLATFORM FEE (1%)</span>
+                    <span class="preview-val" id="prev-fee">—</span>
+                  </div>
+                  <div class="preview-row">
+                    <span class="preview-key">NET DISTRIBUTED</span>
+                    <span class="preview-val" id="prev-net">—</span>
+                  </div>
+                  <div class="preview-row">
+                    <span class="preview-key">PER WALLET</span>
+                    <span class="preview-val" id="prev-per">—</span>
+                  </div>
+                </div>
+                <div style="margin-top:12px;font-size:11px;color:var(--dim)">
+                  ⚠️ Connect your wallet to execute. Airdrop is processed on-chain via Solana.
+                </div>
+              </div>
+              <div id="airdrop-upsell" style="display:none">
+                <div class="upsell">
+                  <div class="icon">🔒</div>
+                  <div style="color:var(--accent);font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;margin-bottom:8px">SUBSCRIPTION REQUIRED</div>
+                  <div id="upsell-message">Your trial has ended. Subscribe to unlock the airdrop tool.</div>
+                  <button class="btn-sm" onclick="goToBilling()">GO TO BILLING →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">AIRDROP HISTORY</div>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>AMOUNT</th>
+                <th>RECIPIENTS</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="airdrop-table">
+              <tr><td colspan="4" class="empty">No airdrops yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="page" id="page-telegram">
+      <div class="page-title">TELEGRAM INTEGRATION</div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">CONNECT GROUP</div>
+        </div>
+        <div class="section-body">
+          <div class="telegram-form">
+            <div class="form-group">
+              <label class="form-label">TELEGRAM BOT TOKEN</label>
+              <input class="form-input" type="text" id="tg-bot-token" placeholder="123456:ABC-DEF..." />
+            </div>
+            <div class="form-group">
+              <label class="form-label">GROUP CHAT ID</label>
+              <input class="form-input" type="text" id="tg-group-id" placeholder="-100123456789" />
+            </div>
+            <button class="btn-sm" onclick="saveTelegram()" style="align-self:flex-start">SAVE CONNECTION</button>
+          </div>
+
+          <div style="margin-top:20px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:12px;line-height:1.8;color:var(--dim)">
+            <div style="color:var(--accent);margin-bottom:8px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px">SETUP GUIDE</div>
+            1. Create a bot via @BotFather → get the token<br>
+            2. Add the bot to your Telegram group as admin<br>
+            3. Get your group ID via @userinfobot<br>
+            4. Paste both above and save<br>
+            5. Your group will receive burn alerts, whale alerts & milestone notifications automatically
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">AUTO-ANNOUNCE SETTINGS</div>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr><th>EVENT</th><th>STATUS</th></tr></thead>
+            <tbody>
+              <tr><td>🔥 Burn Detected</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+              <tr><td>🐋 Whale Transfer (&gt;1M tokens)</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+              <tr><td>🎯 Milestone Reached</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+              <tr><td>👥 Holder Milestone</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Billing -->
+    <div class="page" id="page-billing">
+      <div class="page-title">BILLING & SUBSCRIPTION</div>
+
+      <div class="billing-grid">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">PLAN STATUS</div>
+            <span id="billing-badge"></span>
+          </div>
+          <div class="section-body">
+            <div class="plan-row">
+              <span class="plabel">Plan</span>
+              <span class="pval">Token OS Pro</span>
+            </div>
+            <div class="plan-row">
+              <span class="plabel">Price</span>
+              <span class="pval" id="billing-price">—</span>
+            </div>
+            <div class="plan-row">
+              <span class="plabel">Billing Cycle</span>
+              <span class="pval" id="billing-cycle">—</span>
+            </div>
+            <div class="plan-row">
+              <span class="plabel">Days Remaining</span>
+              <span class="pval" id="billing-days">—</span>
+            </div>
+            <div class="plan-row">
+              <span class="plabel">Renews / Expires</span>
+              <span class="pval" id="billing-expiry">—</span>
+            </div>
+
+            <div style="margin-top:18px;padding:14px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:12px;line-height:1.8;color:var(--dim)">
+              <div style="color:var(--accent);margin-bottom:8px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px">WHAT'S INCLUDED</div>
+              👥 Live holder analytics & growth tracking<br>
+              🎯 Unlimited milestone alerts to Telegram<br>
+              🪂 Airdrop tool with on-chain distribution<br>
+              🔥 Auto burn & whale alerts<br>
+              📊 Full dashboard access
+            </div>
+          </div>
+        </div>
+
+        <div class="qr-box">
+          <div class="section-title" style="align-self:flex-start">PAY WITH SOLANA</div>
+          <div id="qr-canvas">
+            <span style="color:#999;font-size:11px;text-align:center;padding:10px">Click "Generate Payment" to create a QR code</span>
+          </div>
+          <a id="pay-link" class="pay-link" style="display:none" target="_blank">solana:...</a>
+          <button class="btn-sm" onclick="createPayment()" style="width:100%">GENERATE PAYMENT</button>
+          <button class="btn-sm" onclick="checkPayment()" style="width:100%;display:none" id="verify-btn">✓ I'VE PAID — VERIFY</button>
+          <div style="font-size:10px;color:var(--dim);text-align:center">Scan with Phantom, Solflare, or any Solana Pay wallet. Verification checks the chain directly — no card details needed.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:3001'; // Change to Railway URL in production
+
+let currentProject = null;
+let projects = [];
+
+// Clock
+setInterval(() => {
+  document.getElementById('time-display').textContent = new Date().toUTCString().slice(0, 25);
+}, 1000);
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  // Load data for page
+  if (name === 'holders' && currentProject) loadHolders();
+  if (name === 'milestones' && currentProject) loadMilestones();
+  if (name === 'airdrop' && currentProject) loadAirdropHistory();
+  if (name === 'billing' && currentProject) loadSubStatus();
+}
+
+function toast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function goToBilling() {
+  const billingBtn = document.querySelector('button.nav-btn[onclick*="billing"]');
+  showPage('billing', billingBtn);
+}
+
+async function registerProject() {
+  const name = document.getElementById('proj-name').value.trim();
+  const mint = document.getElementById('proj-mint').value.trim();
+  const wallet = document.getElementById('proj-wallet').value.trim();
+
+  if (!name || !mint || !wallet) return toast('⚠️ Fill all fields');
+
+  try {
+    const res = await fetch(`${API}/api/projects/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, mintAddress: mint, ownerWallet: wallet })
+    });
+    const data = await res.json();
+    if (data.error) return toast('❌ ' + data.error);
+
+    toast('✅ Project registered: ' + name);
+    document.getElementById('proj-name').value = '';
+    document.getElementById('proj-mint').value = '';
+    document.getElementById('proj-wallet').value = '';
+
+    // Load this project
+    await loadProjectsByWallet(wallet);
+    selectProject(data.project);
+  } catch (err) {
+    toast('❌ Backend not connected. Using demo mode.');
+    // Demo mode: create fake project
+    const demo = { id: 'demo-' + Date.now(), name, mint_address: mint, owner_wallet: wallet };
+    selectProject(demo);
+  }
+}
+
+async function loadProjectsByWallet(wallet) {
+  try {
+    const res = await fetch(`${API}/api/projects/by-wallet/${wallet}`);
+    projects = await res.json();
+    renderProjectList();
+  } catch {}
+}
+
+function renderProjectList() {
+  const el = document.getElementById('project-list');
+  if (!projects.length) {
+    el.innerHTML = '<div class="empty" style="padding:12px;font-size:11px">No projects yet</div>';
+    return;
+  }
+  el.innerHTML = projects.map(p => `
+    <div class="project-item ${currentProject?.id === p.id ? 'active' : ''}" onclick="selectProject(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <div class="pname">${p.name}</div>
+      <div class="pmint">${p.mint_address.slice(0, 8)}...${p.mint_address.slice(-4)}</div>
+    </div>
+  `).join('');
+}
+
+function selectProject(project) {
+  currentProject = project;
+  renderProjectList();
+  loadOverview();
+  loadSubStatus();
+}
+
+async function loadOverview() {
+  if (!currentProject) return;
+
+  document.getElementById('overview-no-project').style.display = 'none';
+  document.getElementById('overview-content').style.display = 'block';
+
+  // Set loading states
+  document.getElementById('stat-name').textContent = currentProject.name;
+  document.getElementById('stat-holders').textContent = '...';
+  document.getElementById('stat-price').textContent = '...';
+  document.getElementById('stat-symbol').textContent = '...';
+
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/overview`);
+    const data = await res.json();
+
+    document.getElementById('stat-name').textContent = data.metadata?.name || currentProject.name;
+    document.getElementById('stat-holders').textContent = (data.holderCount || 0).toLocaleString();
+    document.getElementById('stat-price').textContent = data.price ? `$${data.price.toFixed(8)}` : 'N/A';
+    document.getElementById('stat-symbol').textContent = data.metadata?.symbol || '???';
+
+    // Top holders table
+    const tbody = document.getElementById('top-holders-table');
+    if (data.topHolders?.length) {
+      tbody.innerHTML = data.topHolders.map(h => `
+        <tr>
+          <td><span class="rank-badge ${h.rank <= 3 ? 'top' : ''}">${h.rank}</span></td>
+          <td class="wallet-addr">${h.wallet.slice(0,6)}...${h.wallet.slice(-4)}</td>
+          <td class="amount">${h.uiAmount?.toLocaleString() || h.amount}</td>
+        </tr>
+      `).join('');
+    } else {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty">No holder data</td></tr>';
+    }
+  } catch {
+    // Demo data
+    document.getElementById('stat-holders').textContent = '4,201';
+    document.getElementById('stat-price').textContent = '$0.00001234';
+    document.getElementById('stat-symbol').textContent = 'TKN';
+    document.getElementById('top-holders-table').innerHTML = `
+      <tr><td><span class="rank-badge top">1</span></td><td class="wallet-addr">Abc1...ef23</td><td class="amount">12,400,000</td></tr>
+      <tr><td><span class="rank-badge top">2</span></td><td class="wallet-addr">Xyz9...12ab</td><td class="amount">8,200,000</td></tr>
+      <tr><td><span class="rank-badge top">3</span></td><td class="wallet-addr">Def4...78cd</td><td class="amount">5,100,000</td></tr>
+    `;
+  }
+}
+
+async function loadHolders() {
+  if (!currentProject) return;
+
+  const tbody = document.getElementById('holders-table');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--dim)">Fetching from chain...<span class="loading"></span></td></tr>';
+
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/holders`);
+    const data = await res.json();
+
+    document.getElementById('holder-count-badge').textContent = `${data.totalHolders.toLocaleString()} total`;
+
+    tbody.innerHTML = data.topHolders.map(h => `
+      <tr>
+        <td><span class="rank-badge ${h.rank <= 3 ? 'top' : ''}">${h.rank}</span></td>
+        <td class="wallet-addr">${h.wallet}</td>
+        <td class="amount">${h.uiAmount?.toLocaleString()}</td>
+        <td style="color:var(--dim)">${data.totalHolders ? ((h.uiAmount / (data.totalHolders * 1000)) * 100).toFixed(2) + '%' : '—'}</td>
+      </tr>
+    `).join('');
+
+    // Load history chart
+    loadHolderHistory();
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty">Backend not connected — deploy to see live data</td></tr>';
+  }
+}
+
+async function loadHolderHistory() {
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/holders/history`);
+    const history = await res.json();
+
+    if (!history.length) return;
+
+    const chart = document.getElementById('holder-chart');
+    const max = Math.max(...history.map(h => h.holder_count));
+
+    chart.innerHTML = history.map(h => `
+      <div class="chart-bar"
+        style="height: ${(h.holder_count / max) * 180}px"
+        data-val="${h.holder_count}"
+        title="${new Date(h.snapshot_at).toLocaleDateString()}: ${h.holder_count} holders">
+      </div>
+    `).join('');
+  } catch {}
+}
+
+async function loadMilestones() {
+  if (!currentProject) return;
+
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/milestones`);
+    const data = await res.json();
+
+    const tbody = document.getElementById('milestones-table');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">No milestones set</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(m => `
+      <tr>
+        <td>${m.type}</td>
+        <td>${Number(m.target_value).toLocaleString()}</td>
+        <td><span class="badge ${m.triggered ? 'badge-green' : 'badge-dim'}">${m.triggered ? 'TRIGGERED' : 'WATCHING'}</span></td>
+        <td style="color:var(--dim);font-size:11px">${m.triggered_at ? new Date(m.triggered_at).toLocaleDateString() : '—'}</td>
+      </tr>
+    `).join('');
+  } catch {
+    document.getElementById('milestones-table').innerHTML = '<tr><td colspan="4" class="empty">Backend not connected</td></tr>';
+  }
+}
+
+async function addMilestone() {
+  if (!currentProject) return toast('⚠️ Select a project first');
+
+  const type = document.getElementById('m-type').value;
+  const value = document.getElementById('m-value').value;
+
+  if (!value) return toast('⚠️ Enter a target value');
+
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/milestones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, targetValue: Number(value) })
+    });
+    const data = await res.json();
+    if (data.error) return toast('❌ ' + data.error);
+
+    toast('✅ Milestone set!');
+    document.getElementById('m-value').value = '';
+    loadMilestones();
+  } catch {
+    toast('❌ Backend not connected');
+  }
+}
+
+async function previewAirdrop() {
+  if (!currentProject) return toast('⚠️ Select a project first');
+
+  const amount = parseFloat(document.getElementById('airdrop-amount').value);
+  const topN = parseInt(document.getElementById('airdrop-topn').value) || 0;
+  const minHolding = parseInt(document.getElementById('airdrop-min').value) || 0;
+
+  if (!amount) return toast('⚠️ Enter SOL amount');
+
+  try {
+    const res = await fetch(`${API}/api/airdrops/${currentProject.id}/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ totalAmount: amount, topN: topN || undefined, minHolding: minHolding || undefined })
+    });
+    const data = await res.json();
+
+    if (res.status === 402) {
+      document.getElementById('airdrop-preview').style.display = 'block';
+      document.getElementById('airdrop-preview-result').style.display = 'none';
+      document.getElementById('airdrop-upsell').style.display = 'block';
+      document.getElementById('upsell-message').textContent =
+        data.message || 'Your trial has ended. Subscribe to unlock the airdrop tool.';
+      return;
+    }
+
+    document.getElementById('airdrop-preview-result').style.display = 'block';
+    document.getElementById('airdrop-upsell').style.display = 'none';
+    document.getElementById('prev-count').textContent = data.recipientCount.toLocaleString();
+    document.getElementById('prev-total').textContent = data.totalAmount.toFixed(4) + ' SOL';
+    document.getElementById('prev-fee').textContent = data.feeAmount.toFixed(4) + ' SOL';
+    document.getElementById('prev-net').textContent = data.netAmount.toFixed(4) + ' SOL';
+    document.getElementById('prev-per').textContent = data.perWallet.toFixed(6) + ' SOL';
+    document.getElementById('airdrop-preview').style.display = 'block';
+  } catch {
+    // Demo preview
+    const fee = amount * 0.01;
+    document.getElementById('prev-count').textContent = '1,247';
+    document.getElementById('prev-total').textContent = amount.toFixed(4) + ' SOL';
+    document.getElementById('prev-fee').textContent = fee.toFixed(4) + ' SOL';
+    document.getElementById('prev-net').textContent = (amount - fee).toFixed(4) + ' SOL';
+    document.getElementById('prev-per').textContent = ((amount - fee) / 1247).toFixed(6) + ' SOL';
+    document.getElementById('airdrop-preview').style.display = 'block';
+  }
+}
+
+async function loadAirdropHistory() {
+  if (!currentProject) return;
+
+  try {
+    const res = await fetch(`${API}/api/airdrops/${currentProject.id}/history`);
+    const data = await res.json();
+
+    const tbody = document.getElementById('airdrop-table');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">No airdrops yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(a => `
+      <tr>
+        <td style="color:var(--dim);font-size:11px">${new Date(a.created_at).toLocaleDateString()}</td>
+        <td>${Number(a.total_amount).toFixed(4)} SOL</td>
+        <td>${a.recipient_count.toLocaleString()}</td>
+        <td><span class="badge badge-green">${a.status.toUpperCase()}</span></td>
+      </tr>
+    `).join('');
+  } catch {}
+}
+
+async function saveTelegram() {
+  if (!currentProject) return toast('⚠️ Select a project first');
+
+  const botToken = document.getElementById('tg-bot-token').value.trim();
+  const groupId = document.getElementById('tg-group-id').value.trim();
+
+  if (!botToken || !groupId) return toast('⚠️ Fill both fields');
+
+  try {
+    const res = await fetch(`${API}/api/projects/${currentProject.id}/telegram`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telegramBotToken: botToken, telegramGroupId: groupId })
+    });
+    const data = await res.json();
+    if (data.error) return toast('❌ ' + data.error);
+    toast('✅ Telegram connected!');
+  } catch {
+    toast('❌ Backend not connected');
+  }
+}
+
+/* ---------------- Billing / Solana Pay ---------------- */
+
+let currentPaymentReference = null;
+
+function renderSubBadge(status, daysLeft) {
+  const cls = status === 'active' ? 'active' : status === 'trial' ? 'trial' : 'expired';
+  const label = status === 'active' ? `ACTIVE · ${daysLeft}D LEFT`
+    : status === 'trial' ? `TRIAL · ${daysLeft}D LEFT`
+    : 'EXPIRED';
+
+  const html = `<span class="sub-badge ${cls}">● ${label}</span>`;
+
+  const sidebar = document.getElementById('sub-badge-container');
+  const billing = document.getElementById('billing-badge');
+  if (sidebar) sidebar.innerHTML = html;
+  if (billing) billing.innerHTML = html;
+  document.getElementById('sub-status-section').style.display = 'block';
+}
+
+async function loadSubStatus() {
+  if (!currentProject) return;
+
+  try {
+    const res = await fetch(`${API}/api/subscriptions/${currentProject.id}/status`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    renderSubBadge(data.status, data.daysLeft);
+
+    document.getElementById('billing-price').textContent = `${data.priceSol} SOL`;
+    document.getElementById('billing-cycle').textContent = `${data.subscriptionDays} days`;
+    document.getElementById('billing-days').textContent = `${data.daysLeft} days`;
+    document.getElementById('billing-expiry').textContent = data.expiresAt
+      ? new Date(data.expiresAt).toLocaleDateString()
+      : '—';
+  } catch {
+    // Demo fallback
+    renderSubBadge('trial', 7);
+    document.getElementById('billing-price').textContent = '1 SOL';
+    document.getElementById('billing-cycle').textContent = '30 days';
+    document.getElementById('billing-days').textContent = '7 days';
+    document.getElementById('billing-expiry').textContent = '—';
+  }
+}
+
+async function createPayment() {
+  if (!currentProject) return toast('⚠️ Select a project first');
+
+  try {
+    const res = await fetch(`${API}/api/subscriptions/${currentProject.id}/create-payment`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (data.error) return toast('❌ ' + data.error);
+
+    currentPaymentReference = data.reference;
+
+    // Render QR
+    const qrEl = document.getElementById('qr-canvas');
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, {
+      text: data.url,
+      width: 160,
+      height: 160,
+      colorDark: '#080b0f',
+      colorLight: '#ffffff'
+    });
+
+    const link = document.getElementById('pay-link');
+    link.href = data.url;
+    link.textContent = data.url;
+    link.style.display = 'block';
+
+    document.getElementById('verify-btn').style.display = 'block';
+
+    toast(`✅ Payment request created — send ${data.amount} SOL`);
+  } catch {
+    toast('❌ Backend not connected');
+  }
+}
+
+async function checkPayment() {
+  if (!currentProject || !currentPaymentReference) return;
+
+  toast('⏳ Checking chain...');
+
+  try {
+    const res = await fetch(`${API}/api/subscriptions/${currentProject.id}/verify/${currentPaymentReference}`);
+    const data = await res.json();
+
+    if (data.confirmed) {
+      toast('✅ Payment confirmed! Subscription activated.');
+      loadSubStatus();
+      document.getElementById('verify-btn').style.display = 'none';
+      document.getElementById('pay-link').style.display = 'none';
+      document.getElementById('qr-canvas').innerHTML = '<span style="color:#999;font-size:11px;text-align:center;padding:10px">✓ Paid</span>';
+      currentPaymentReference = null;
+    } else {
+      toast('⏳ No payment found yet. Try again after sending.');
+    }
+  } catch {
+    toast('❌ Backend not connected');
+  }
+}
+</script>
+</body>
+</html>

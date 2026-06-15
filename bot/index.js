@@ -67,15 +67,15 @@ function mainKeyboard(hasProject) {
 }
 
 async function getProject(ctx) {
-  const session = ctx_session(ctx);
-  return session.project || null;
+  const s = ctx_session(ctx);
+  return s.project || null;
 }
 
 async function requireProject(ctx) {
   const proj = await getProject(ctx);
   if (!proj) {
     await ctx.reply(
-      `⚠️ *No project loaded*\n\n${line}\nUse /project <mint> to register your token first.`,
+      `⚠️ *No project loaded*\n\n${line}\nUse /project <mint> to register your token first\.`,
       {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
@@ -96,14 +96,14 @@ bot.start(async (ctx) => {
     `${dline}\n` +
     `⚡ *TOKEN OS*\n` +
     `${dline}\n\n` +
-    `Welcome, *${name}*\\.\n\n` +
-    `Your Solana token command center\\.\n` +
-    `Holder analytics, whale alerts, airdrops & Telegram automation — live from chain\\.\n\n` +
+    `Welcome, *${name}*\.\n\n` +
+    `Your Solana token command center\.\n` +
+    `Holder analytics, whale alerts, airdrops & Telegram automation — live from chain\.\n\n` +
     `${line}\n` +
     `🚀 *Get started:*\n` +
     `Register your token with:\n` +
     `\`/project <mint_address>\`\n\n` +
-    `Or open the dashboard to manage everything visually\\.\n` +
+    `Or open the dashboard to manage everything visually\.\n` +
     `${line}`,
     Markup.inlineKeyboard([
       [Markup.button.callback('📋 How to register', 'cmd_register')],
@@ -172,7 +172,6 @@ bot.command('project', async (ctx) => {
 
     ctx_session(ctx).project = res.data;
 
-    // Fetch overview immediately
     let overviewText = '';
     try {
       const ov = await axios.get(`${BACKEND}/api/projects/${res.data.id}/overview`);
@@ -188,10 +187,7 @@ bot.command('project', async (ctx) => {
       ctx.chat.id, msg.message_id, null,
       `${dline}\n✅ *PROJECT LOADED*\n${dline}\n\n` +
       `📍 Mint: \`${shortWallet(mint)}\`${overviewText}\n${line}`,
-      {
-        parse_mode: 'Markdown',
-        ...mainKeyboard(true)
-      }
+      { parse_mode: 'Markdown', ...mainKeyboard(true) }
     );
   } catch (e) {
     await ctx.telegram.editMessageText(
@@ -282,14 +278,9 @@ bot.command('stats', async (ctx) => {
 
     const { metadata, price } = ovRes.data;
     const { totalHolders, topHolders } = holdRes.data;
-
     const topHolder = topHolders?.[0];
-    const topPct = topHolder && metadata?.supply
-      ? ((Number(topHolder.uiAmount) / Number(metadata.supply)) * 100).toFixed(2)
-      : '?';
-
     const mcap = price && metadata?.supply
-      ? `$${(Number(price) * Number(metadata.supply) / Math.pow(10, metadata.decimals || 6)).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+      ? `$${(Number(price) * Number(metadata.supply) / Math.pow(10, metadata.decimals || 6)).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
       : 'N/A';
 
     await ctx.telegram.editMessageText(
@@ -302,13 +293,11 @@ bot.command('stats', async (ctx) => {
       `${line}\n` +
       `💹 *Market*\n` +
       `├ Price: *${fmtPrice(price)}*\n` +
-      `├ Market Cap: *${mcap}*\n` +
-      `└ Supply: *${fmtNum(metadata?.supply || 0)}*\n\n` +
+      `└ Market Cap: *${mcap}*\n\n` +
       `${line}\n` +
       `👥 *Holders*\n` +
       `├ Total: *${fmtNum(totalHolders)}*\n` +
-      `├ Top Holder: \`${shortWallet(topHolder?.wallet)}\`\n` +
-      `└ Top Holder %: *${topPct}%*\n\n` +
+      `└ Top Wallet: \`${shortWallet(topHolder?.wallet)}\`\n\n` +
       `${line}`,
       {
         parse_mode: 'Markdown',
@@ -384,7 +373,7 @@ bot.command('top', async (ctx) => {
 
     const rows = topHolders.slice(0, 10).map((h, i) => {
       const rank = i + 1;
-      const emoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}\\. `;
+      const emoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}\\.`;
       const pct = totalHolders ? ((Number(h.uiAmount) / (totalHolders * 1000)) * 100).toFixed(2) : '?';
       return `${emoji} \`${shortWallet(h.wallet)}\`\n    └ ${fmtNum(h.uiAmount)} \\(${pct}%\\)`;
     }).join('\n');
@@ -412,15 +401,13 @@ bot.command('top', async (ctx) => {
   }
 });
 
-// ── /alert (quick milestone menu) ────────────────────────────────────────────
+// ── /alert ────────────────────────────────────────────────────────────────────
 bot.command('alert', async (ctx) => {
   const proj = await requireProject(ctx);
   if (!proj) return;
 
   await ctx.replyWithMarkdown(
-    `${dline}\n🎯 *SET MILESTONE ALERT*\n${dline}\n\n` +
-    `Choose a preset or set a custom target:\n\n` +
-    `${line}`,
+    `${dline}\n🎯 *SET MILESTONE ALERT*\n${dline}\n\nChoose a preset or set a custom target:\n\n${line}`,
     Markup.inlineKeyboard([
       [
         Markup.button.callback('👥 100 Holders', 'ms_h_100'),
@@ -440,7 +427,7 @@ bot.command('alert', async (ctx) => {
   );
 });
 
-// ── /milestone ───────────────────────────────────────────────────────────────
+// ── /milestone ────────────────────────────────────────────────────────────────
 bot.command('milestone', async (ctx) => {
   const proj = await requireProject(ctx);
   if (!proj) return;
@@ -456,8 +443,7 @@ bot.command('milestone', async (ctx) => {
       `Types:\n` +
       `• \`holder_count\` — e\\.g\\. /milestone holder_count 1000\n` +
       `• \`price\` — e\\.g\\. /milestone price 0\\.001\n\n` +
-      `${line}\n` +
-      `Or use the quick menu:`,
+      `${line}\nOr use the quick menu:`,
       Markup.inlineKeyboard([[Markup.button.callback('🎯 Quick Alert Menu', 'cmd_alert')]])
     );
   }
@@ -466,12 +452,11 @@ bot.command('milestone', async (ctx) => {
     await axios.post(`${BACKEND}/api/projects/${proj.id}/milestones`, {
       type, targetValue: value
     });
-
     await ctx.replyWithMarkdown(
       `${dline}\n✅ *MILESTONE SET*\n${dline}\n\n` +
       `📌 Type: *${type}*\n` +
       `🎯 Target: *${fmtNum(value)}*\n\n` +
-      `You'll get an alert here when it triggers\\.\n\n` +
+      `You'll get an alert here when it triggers\.\n\n` +
       `${line}`,
       Markup.inlineKeyboard([
         [
@@ -496,13 +481,13 @@ bot.command('milestones', async (ctx) => {
 
     if (!data.length) {
       return ctx.replyWithMarkdown(
-        `${dline}\n🎯 *MILESTONES*\n${dline}\n\nNo milestones set yet\\.\n\n${line}`,
+        `${dline}\n🎯 *MILESTONES*\n${dline}\n\nNo milestones set yet\.\n\n${line}`,
         Markup.inlineKeyboard([[Markup.button.callback('➕ Set First Alert', 'cmd_alert')]])
       );
     }
 
     const rows = data.map(m =>
-      `${m.triggered ? '✅' : '👁'} *${m.type}* → \`${fmtNum(m.target_value)}\`${m.triggered ? ' — HIT \\✓' : ''}`
+      `${m.triggered ? '✅' : '👁'} *${m.type}* → \`${fmtNum(m.target_value)}\`${m.triggered ? ' — HIT ✓' : ''}`
     ).join('\n');
 
     await ctx.replyWithMarkdown(
@@ -519,7 +504,7 @@ bot.command('milestones', async (ctx) => {
   }
 });
 
-// ── /airdrop ─────────────────────────────────────────────────────────────────
+// ── /airdrop ──────────────────────────────────────────────────────────────────
 bot.command('airdrop', async (ctx) => {
   const proj = await requireProject(ctx);
   if (!proj) return;
@@ -535,8 +520,7 @@ bot.command('airdrop', async (ctx) => {
       `• \`/airdrop 5\` — 5 SOL to all holders\n` +
       `• \`/airdrop 5 100\` — 5 SOL to top 100\n` +
       `• \`/airdrop 5 0 1000\` — holders with ≥1000 tokens\n\n` +
-      `${line}\n` +
-      `Quick presets:`,
+      `${line}\nQuick presets:`,
       Markup.inlineKeyboard([
         [
           Markup.button.callback('💸 1 SOL Drop', 'drop_1'),
@@ -562,7 +546,6 @@ bot.command('airdrop', async (ctx) => {
     });
 
     const d = res.data;
-
     await ctx.telegram.editMessageText(
       ctx.chat.id, msg.message_id, null,
       `${dline}\n💸 *AIRDROP PREVIEW*\n${dline}\n\n` +
@@ -574,7 +557,7 @@ bot.command('airdrop', async (ctx) => {
       `${line}\n` +
       `📬 Per Wallet: *${Number(d.perWallet).toFixed(6)} SOL*\n\n` +
       `${line}\n` +
-      `⚠️ Execute on\\-chain via your connected wallet\\.`,
+      `⚠️ Execute on\\-chain via your connected wallet\.`,
       {
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
@@ -594,7 +577,7 @@ bot.command('airdrop', async (ctx) => {
   }
 });
 
-// ── /dashboard ───────────────────────────────────────────────────────────────
+// ── /dashboard ────────────────────────────────────────────────────────────────
 bot.command('dashboard', async (ctx) => {
   await ctx.replyWithMarkdown(
     `${dline}\n🖥 *TOKEN OS DASHBOARD*\n${dline}\n\nOpen your full command center:`,
@@ -605,27 +588,35 @@ bot.command('dashboard', async (ctx) => {
   );
 });
 
-// ── CALLBACK QUERIES (button taps) ───────────────────────────────────────────
+// ── CALLBACK QUERIES ──────────────────────────────────────────────────────────
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
 
   const proj = ctx_session(ctx).project;
 
-  // Navigation
-  if (data === 'cmd_help') return ctx.scene ? null : bot.handleUpdate({ ...ctx.update, message: { ...ctx.callbackQuery.message, text: '/help', from: ctx.from, chat: ctx.chat } });
-  if (data === 'cmd_overview') return execOverview(ctx, proj);
-  if (data === 'cmd_holders') return execHolders(ctx, proj);
-  if (data === 'cmd_top') return execTop(ctx, proj);
-  if (data === 'cmd_stats') return execStats(ctx, proj);
+  if (data === 'cmd_overview')   return execOverview(ctx, proj);
+  if (data === 'cmd_holders')    return execHolders(ctx, proj);
+  if (data === 'cmd_top')        return execTop(ctx, proj);
+  if (data === 'cmd_stats')      return execStats(ctx, proj);
   if (data === 'cmd_milestones') return execMilestones(ctx, proj);
-  if (data === 'cmd_alert') return execAlertMenu(ctx, proj);
-  if (data === 'cmd_airdrop') return execAirdropMenu(ctx, proj);
-  if (data === 'cmd_settings') return execSettings(ctx, proj);
-  if (data === 'cmd_register') return execRegisterHelp(ctx);
-  if (data === 'alert_holder') return execAlertMenu(ctx, proj);
+  if (data === 'cmd_alert')      return execAlertMenu(ctx, proj);
+  if (data === 'cmd_airdrop')    return execAirdropMenu(ctx, proj);
+  if (data === 'cmd_settings')   return execSettings(ctx, proj);
+  if (data === 'cmd_register')   return execRegisterHelp(ctx);
+  if (data === 'alert_holder')   return execAlertMenu(ctx, proj);
+  if (data === 'drop_1')         return execAirdropAmount(ctx, proj, 1);
+  if (data === 'drop_5')         return execAirdropAmount(ctx, proj, 5);
+  if (data === 'drop_10')        return execAirdropAmount(ctx, proj, 10);
+  if (data === 'drop_top100')    return execAirdropAmount(ctx, proj, 5, 100);
 
-  // Milestone presets
+  if (data === 'ms_custom') {
+    return ctx.reply(
+      `Send the command manually:\n\n\`/milestone holder_count 2500\`\nor\n\`/milestone price 0.001\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+
   const msMatch = data.match(/^ms_h_(\d+)$/);
   if (msMatch && proj) {
     const target = parseInt(msMatch[1]);
@@ -638,29 +629,19 @@ bot.on('callback_query', async (ctx) => {
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
-            [Markup.button.callback('➕ Add Another', 'cmd_alert'), Markup.button.callback('📋 View All', 'cmd_milestones')]
+            [
+              Markup.button.callback('➕ Add Another', 'cmd_alert'),
+              Markup.button.callback('📋 View All', 'cmd_milestones')
+            ]
           ])
         }
       );
     } catch { await ctx.reply('❌ Failed to set milestone'); }
     return;
   }
-
-  if (data === 'ms_custom') {
-    return ctx.editMessageText(
-      `${dline}\n✏️ *CUSTOM MILESTONE*\n${dline}\n\nSend the command manually:\n\n\`/milestone holder_count 2500\`\nor\n\`/milestone price 0.001\``,
-      { parse_mode: 'Markdown' }
-    );
-  }
-
-  // Airdrop presets
-  if (data === 'drop_1') return execAirdropAmount(ctx, proj, 1);
-  if (data === 'drop_5') return execAirdropAmount(ctx, proj, 5);
-  if (data === 'drop_10') return execAirdropAmount(ctx, proj, 10);
-  if (data === 'drop_top100') return execAirdropAmount(ctx, proj, 5, 100);
 });
 
-// ── CALLBACK HELPERS ─────────────────────────────────────────────────────────
+// ── CALLBACK HELPERS ──────────────────────────────────────────────────────────
 async function execOverview(ctx, proj) {
   if (!proj) return noProjectMsg(ctx);
   const msg = await ctx.reply('📊 Fetching...');
@@ -668,14 +649,17 @@ async function execOverview(ctx, proj) {
     const res = await axios.get(`${BACKEND}/api/projects/${proj.id}/overview`);
     const { metadata, price, holderCount, topHolders } = res.data;
     const top3 = (topHolders || []).slice(0, 3).map((h, i) =>
-      `${ ['🥇','🥈','🥉'][i]} \`${shortWallet(h.wallet)}\` — ${fmtNum(h.uiAmount)}`
+      `${['🥇','🥈','🥉'][i]} \`${shortWallet(h.wallet)}\` — ${fmtNum(h.uiAmount)}`
     ).join('\n');
     await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null,
       `${dline}\n📈 *${metadata?.name || proj.name} \\(${metadata?.symbol || '???'}\\)*\n${dline}\n\n` +
       `👥 *Holders:* ${fmtNum(holderCount)}\n💵 *Price:* ${fmtPrice(price)}\n\n${line}\n🏆 *Top Holders*\n${line}\n${top3 || 'No data'}\n\n${line}`,
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('🔄 Refresh','cmd_overview'),Markup.button.callback('👥 Holders','cmd_holders')],[Markup.button.url('🖥 Dashboard',DASHBOARD_URL)]]) }
+      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh','cmd_overview'), Markup.button.callback('👥 Holders','cmd_holders')],
+        [Markup.button.url('🖥 Dashboard', DASHBOARD_URL)]
+      ])}
     );
-  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, {parse_mode:'Markdown'}); }
+  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, { parse_mode: 'Markdown' }); }
 }
 
 async function execHolders(ctx, proj) {
@@ -685,9 +669,12 @@ async function execHolders(ctx, proj) {
     const res = await axios.get(`${BACKEND}/api/projects/${proj.id}/holders`);
     await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null,
       `${dline}\n👥 *LIVE HOLDER COUNT*\n${dline}\n\n🔢 *${fmtNum(res.data.totalHolders)}* holders on\\-chain\n\n${line}`,
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('🔄 Refresh','cmd_holders'),Markup.button.callback('🏆 Top 10','cmd_top')],[Markup.button.callback('🎯 Set Alert','alert_holder'),Markup.button.url('📊 Chart',DASHBOARD_URL)]]) }
+      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh','cmd_holders'), Markup.button.callback('🏆 Top 10','cmd_top')],
+        [Markup.button.callback('🎯 Set Alert','alert_holder'), Markup.button.url('📊 Chart', DASHBOARD_URL)]
+      ])}
     );
-  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, {parse_mode:'Markdown'}); }
+  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, { parse_mode: 'Markdown' }); }
 }
 
 async function execTop(ctx, proj) {
@@ -703,15 +690,15 @@ async function execTop(ctx, proj) {
     }).join('\n');
     await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null,
       `${dline}\n🏆 *TOP 10 HOLDERS*\n${dline}\n\n${rows}\n\n${line}\n👥 Total: *${fmtNum(totalHolders)}*`,
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('🔄 Refresh','cmd_top'),Markup.button.url('🖥 Dashboard',DASHBOARD_URL)]]) }
+      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh','cmd_top'), Markup.button.url('🖥 Dashboard', DASHBOARD_URL)]
+      ])}
     );
-  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, {parse_mode:'Markdown'}); }
+  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, { parse_mode: 'Markdown' }); }
 }
 
 async function execStats(ctx, proj) {
   if (!proj) return noProjectMsg(ctx);
-  ctx.message = { text: '/stats', from: ctx.from, chat: ctx.chat };
-  // Trigger via reply
   const msg = await ctx.reply('📡 Fetching stats...');
   try {
     const [ovRes, holdRes] = await Promise.all([
@@ -721,12 +708,17 @@ async function execStats(ctx, proj) {
     const { metadata, price } = ovRes.data;
     const { totalHolders, topHolders } = holdRes.data;
     const topHolder = topHolders?.[0];
-    const mcap = price && metadata?.supply ? `$${(Number(price)*Number(metadata.supply)/Math.pow(10,metadata.decimals||6)).toLocaleString(undefined,{maximumFractionDigits:0})}` : 'N/A';
+    const mcap = price && metadata?.supply
+      ? `$${(Number(price)*Number(metadata.supply)/Math.pow(10,metadata.decimals||6)).toLocaleString(undefined,{maximumFractionDigits:0})}`
+      : 'N/A';
     await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null,
       `${dline}\n📊 *FULL STATS — ${metadata?.symbol||'???'}*\n${dline}\n\n🪙 *Token*\n├ Name: *${metadata?.name||'Unknown'}*\n└ Symbol: *${metadata?.symbol||'???'}*\n\n${line}\n💹 *Market*\n├ Price: *${fmtPrice(price)}*\n└ Market Cap: *${mcap}*\n\n${line}\n👥 *Holders*\n├ Total: *${fmtNum(totalHolders)}*\n└ Top Wallet: \`${shortWallet(topHolder?.wallet)}\`\n\n${line}`,
-      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('🔄 Refresh','cmd_stats'),Markup.button.callback('🏆 Top 10','cmd_top')],[Markup.button.url('🖥 Dashboard',DASHBOARD_URL)]]) }
+      { parse_mode: 'Markdown', ...Markup.inlineKeyboard([
+        [Markup.button.callback('🔄 Refresh','cmd_stats'), Markup.button.callback('🏆 Top 10','cmd_top')],
+        [Markup.button.url('🖥 Dashboard', DASHBOARD_URL)]
+      ])}
     );
-  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, {parse_mode:'Markdown'}); }
+  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, { parse_mode: 'Markdown' }); }
 }
 
 async function execMilestones(ctx, proj) {
@@ -735,7 +727,7 @@ async function execMilestones(ctx, proj) {
     const res = await axios.get(`${BACKEND}/api/projects/${proj.id}/milestones`);
     const data = res.data;
     if (!data.length) {
-      return ctx.reply(`${dline}\n🎯 *MILESTONES*\n${dline}\n\nNo milestones set yet\\.`, { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('➕ Set First Alert','cmd_alert')]]) });
+      return ctx.reply(`${dline}\n🎯 *MILESTONES*\n${dline}\n\nNo milestones set yet\.`, { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('➕ Set First Alert','cmd_alert')]]) });
     }
     const rows = data.map(m=>`${m.triggered?'✅':'👁'} *${m.type}* → \`${fmtNum(m.target_value)}\`${m.triggered?' — HIT':''}`).join('\n');
     await ctx.reply(`${dline}\n🎯 *MILESTONES*\n${dline}\n\n${rows}\n\n${line}`,
@@ -749,9 +741,9 @@ async function execAlertMenu(ctx, proj) {
   await ctx.reply(
     `${dline}\n🎯 *SET MILESTONE ALERT*\n${dline}\n\nChoose a holder target:`,
     { parse_mode:'Markdown', ...Markup.inlineKeyboard([
-      [Markup.button.callback('👥 100','ms_h_100'),Markup.button.callback('👥 500','ms_h_500')],
-      [Markup.button.callback('👥 1K','ms_h_1000'),Markup.button.callback('👥 5K','ms_h_5000')],
-      [Markup.button.callback('👥 10K','ms_h_10000'),Markup.button.callback('👥 100K','ms_h_100000')],
+      [Markup.button.callback('👥 100','ms_h_100'), Markup.button.callback('👥 500','ms_h_500')],
+      [Markup.button.callback('👥 1K','ms_h_1000'), Markup.button.callback('👥 5K','ms_h_5000')],
+      [Markup.button.callback('👥 10K','ms_h_10000'), Markup.button.callback('👥 100K','ms_h_100000')],
       [Markup.button.callback('✏️ Custom Target','ms_custom')],
       [Markup.button.callback('📋 View Active','cmd_milestones')]
     ])}
@@ -763,9 +755,9 @@ async function execAirdropMenu(ctx, proj) {
   await ctx.reply(
     `${dline}\n💸 *AIRDROP TOOL*\n${dline}\n\nQuick presets:`,
     { parse_mode:'Markdown', ...Markup.inlineKeyboard([
-      [Markup.button.callback('💸 1 SOL','drop_1'),Markup.button.callback('💸 5 SOL','drop_5')],
-      [Markup.button.callback('💸 10 SOL','drop_10'),Markup.button.callback('💸 Top 100','drop_top100')],
-      [Markup.button.url('🖥 Full Airdrop Tool',DASHBOARD_URL)]
+      [Markup.button.callback('💸 1 SOL','drop_1'), Markup.button.callback('💸 5 SOL','drop_5')],
+      [Markup.button.callback('💸 10 SOL','drop_10'), Markup.button.callback('💸 Top 100','drop_top100')],
+      [Markup.button.url('🖥 Full Airdrop Tool', DASHBOARD_URL)]
     ])}
   );
 }
@@ -780,7 +772,7 @@ async function execAirdropAmount(ctx, proj, amount, topN) {
       `${dline}\n💸 *AIRDROP PREVIEW*\n${dline}\n\n👥 Recipients: *${fmtNum(d.recipientCount)}*\n${line}\n💰 Total: *${Number(d.totalAmount).toFixed(4)} SOL*\n📊 Fee \\(1%\\): *${Number(d.feeAmount).toFixed(4)} SOL*\n✅ Net: *${Number(d.netAmount).toFixed(4)} SOL*\n${line}\n📬 Per Wallet: *${Number(d.perWallet).toFixed(6)} SOL*\n\n${line}`,
       { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('🔄 Recalculate','cmd_airdrop'),Markup.button.url('🖥 Execute',DASHBOARD_URL)]]) }
     );
-  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, {parse_mode:'Markdown'}); }
+  } catch (e) { await ctx.telegram.editMessageText(ctx.chat.id, msg.message_id, null, `❌ ${e.message}`, { parse_mode:'Markdown' }); }
 }
 
 async function execSettings(ctx, proj) {
@@ -789,7 +781,7 @@ async function execSettings(ctx, proj) {
     `${dline}\n⚙️ *SETTINGS*\n${dline}\n\n📍 Project: *${proj.name}*\n💳 Plan: *${(proj.subscription_status||'trial').toUpperCase()}*\n\n${line}`,
     { parse_mode:'Markdown', ...Markup.inlineKeyboard([
       [Markup.button.callback('🔄 Switch Project','cmd_register')],
-      [Markup.button.url('⚙️ Full Settings',DASHBOARD_URL)]
+      [Markup.button.url('⚙️ Full Settings', DASHBOARD_URL)]
     ])}
   );
 }
@@ -797,13 +789,13 @@ async function execSettings(ctx, proj) {
 async function execRegisterHelp(ctx) {
   await ctx.reply(
     `${dline}\n📋 *REGISTER A TOKEN*\n${dline}\n\nSend your mint address:\n\n\`/project <mint_address>\`\n\nExample:\n\`/project Htg5ds...pump\`\n\n${line}\nOr use the dashboard:`,
-    { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.url('🖥 Open Dashboard',DASHBOARD_URL)]]) }
+    { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.url('🖥 Open Dashboard', DASHBOARD_URL)]]) }
   );
 }
 
 async function noProjectMsg(ctx) {
   await ctx.reply(
-    `⚠️ *No project loaded*\n\n${line}\nUse /project <mint> first\\.`,
+    `⚠️ *No project loaded*\n\n${line}\nUse /project <mint> first\.`,
     { parse_mode:'Markdown', ...Markup.inlineKeyboard([[Markup.button.callback('📋 How to Register','cmd_register')]]) }
   );
 }
@@ -811,13 +803,27 @@ async function noProjectMsg(ctx) {
 // ── ERROR HANDLER ─────────────────────────────────────────────────────────────
 bot.catch((err, ctx) => {
   console.error(`[bot] Error for ${ctx.updateType}:`, err.message);
-  ctx.reply('⚠️ Something went wrong\\. Try again\\.', { parse_mode: 'Markdown' }).catch(() => {});
+  ctx.reply('⚠️ Something went wrong\. Try again\.', { parse_mode: 'Markdown' }).catch(() => {});
 });
 
-// ── LAUNCH ───────────────────────────────────────────────────────────────────
-bot.launch().then(() => {
-  console.log('⚡ TOKEN OS bot running');
-}).catch(console.error);
+// ── LAUNCH ────────────────────────────────────────────────────────────────────
+async function startBot() {
+  try {
+    await bot.telegram.deleteWebhook({ drop_pending_updates: true });
+    await bot.launch({ dropPendingUpdates: true });
+    console.log('⚡ TOKEN OS bot running');
+  } catch (e) {
+    if (e.response?.error_code === 409) {
+      console.log('[bot] Conflict — retrying in 5s...');
+      setTimeout(startBot, 5000);
+    } else {
+      console.error('[bot] Launch failed:', e.message);
+      process.exit(1);
+    }
+  }
+}
+
+startBot();
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));

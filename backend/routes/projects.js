@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../services/db');
 const helius = require('../services/helius');
-const { v4: uuidv4 } = require('uuid');
 
 // Register a new token project
 router.post('/register', async (req, res) => {
@@ -12,8 +11,12 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Verify token exists on-chain
-    const metadata = await helius.getTokenMetadata(mintAddress);
+    let metadata = { name: 'Unknown', symbol: '???' };
+    try {
+      metadata = await helius.getTokenMetadata(mintAddress);
+    } catch (heliusErr) {
+      console.error('Helius metadata failed:', heliusErr.message);
+    }
 
     const result = await db.query(
       `INSERT INTO projects (name, mint_address, owner_wallet, subscription_status, subscription_expires_at)
@@ -60,14 +63,17 @@ router.get('/:id/holders', async (req, res) => {
     const proj = await db.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);
     if (!proj.rows.length) return res.status(404).json({ error: 'Not found' });
 
-    const data = await helius.getTokenHolders(proj.rows[0].mint_address);
-
-    // Save snapshot
-    await db.query(
-      `INSERT INTO holders_snapshots (project_id, holder_count, top_holders)
-       VALUES ($1, $2, $3)`,
-      [req.params.id, data.totalHolders, JSON.stringify(data.topHolders)]
-    );
+    let data = { totalHolders: 0, topHolders: [] };
+    try {
+      data = await helius.getTokenHolders(proj.rows[0].mint_address);
+      await db.query(
+        `INSERT INTO holders_snapshots (project_id, holder_count, top_holders)
+         VALUES ($1, $2, $3)`,
+        [req.params.id, data.totalHolders, JSON.stringify(data.topHolders)]
+      );
+    } catch (e) {
+      console.error('Holders fetch failed:', e.message);
+    }
 
     res.json(data);
   } catch (err) {
@@ -100,11 +106,13 @@ router.get('/:id/overview', async (req, res) => {
 
     const mint = proj.rows[0].mint_address;
 
-    const [metadata, price, holderData] = await Promise.all([
-      helius.getTokenMetadata(mint),
-      helius.getTokenPrice(mint),
-      helius.getTokenHolders(mint)
-    ]);
+    let metadata = { name: 'Unknown', symbol: '???' };
+    let price = null;
+    let holderData = { totalHolders: 0, topHolders: [] };
+
+    try { metadata = await helius.getTokenMetadata(mint); } catch (e) { console.error('Metadata failed:', e.message); }
+    try { price = await helius.getTokenPrice(mint); } catch (e) { console.error('Price failed:', e.message); }
+    try { holderData = await helius.getTokenHolders(mint); } catch (e) { console.error('Holders failed:', e.message); }
 
     res.json({
       project: proj.rows[0],
